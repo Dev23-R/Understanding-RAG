@@ -1,8 +1,7 @@
 # Understanding RAG
 
 A working retrieval-augmented generation system, built from scratch to measure
-what retrieval actually does to a model's output — and documented throughout with
-the reasoning behind each decision.
+what retrieval actually does to a model's output.
 
 Everything runs locally. No API keys, no network calls after the initial model
 downloads.
