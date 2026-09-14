@@ -16,8 +16,8 @@ retrieved context is in the prompt.
 | Correct answers | **2/14 (14%)** | **14/14 (100%)** |
 | Mean prompt tokens | 54 | 1,234 |
 
-The two baseline passes were lucky guesses — questions where generic industry
-advice happens to match Meridian's actual policy. On knowing anything specific
+The two baseline passes were lucky guesses, questions where generic industry
+advice happens to match Meridian's actual policy. Without knowing anything specific
 about the corpus, the baseline scores 0/14.
 
 ### The clearest single example
@@ -26,17 +26,20 @@ about the corpus, the baseline scores 0/14.
 > the maximum replica count?**
 
 **Without retrieval**, the model pattern-matched "Atlas" to MongoDB Atlas and
-produced a confident, detailed, entirely fabricated incident procedure — shard
+produced a confident, detailed, entirely fabricated incident procedure: shard
 balancers, chunk migration, replica set members. It stated the max replica count
 is 16, *which is correct*, for completely the wrong reason (16 is the MongoDB
-replica set member limit).
+replica set member limit). It's important to understand that even if the response
+is correct, it must be correct for the right reasons. Getting a response that is correct
+by mistake is also viewed as wrong.
 
 **With retrieval**, it gave the real answer: scale with
 `kubectl -n meridian scale deploy/atlas --replicas=12`, max 16 because Atlas holds
 one PostGIS connection per replica against a 200-connection cap.
 
+Restating because of how important it is to understand:
 A right answer for a wrong reason is still a failure, because the reason is what
-you reason from next. Full write-up in the vault.
+you reason from next. Full write-up in the Obsidian vault .md files.
 
 ## Documentation
 
