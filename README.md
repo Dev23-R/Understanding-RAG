@@ -92,7 +92,7 @@ Understanding RAG/   the Obsidian vault
 
 **Similarity thresholds do not separate answerable from unanswerable questions.**
 On this corpus the unanswerable *"What is Meridian's parental leave policy?"*
-scores 0.688 — higher than the answerable *"What language is Sentry written
+scores 0.688, higher than the answerable *"What language is Sentry written
 in?"* at 0.615. No threshold splits them; rejecting the former costs you a third
 of the questions the corpus answers. The reason is structural: a passage is
 embedded before any question exists, so its vector encodes topic, not
