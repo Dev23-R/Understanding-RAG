@@ -1,0 +1,10 @@
+# Normalise line endings so the repo stays LF regardless of platform, and Git
+# stops warning about CRLF conversion on every add. Without this, a Windows
+# checkout followed by a Linux one produces a diff on every line of every file.
+* text=auto eol=lf
+
+# Binary -- never convert.
+*.npy binary
+*.png binary
+*.jpg binary
+*.pdf binary

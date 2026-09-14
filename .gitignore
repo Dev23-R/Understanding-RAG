@@ -13,12 +13,27 @@ venv/
 # Node
 node_modules/
 
-# Vector stores / indexes / caches
+# Built indexes and model caches.
+# These are derived artifacts -- rebuilt from corpus/ by `index.py` in seconds.
+# Committing them would bloat the repo and, worse, let a stale index silently
+# disagree with the corpus it claims to represent.
+index/
 *.index
 *.faiss
-.chroma/
-chroma_db/
 .cache/
+.hf_cache/
+
+# Eval run outputs (timestamped, regenerated per run)
+evals/runs/
+
+# --- Obsidian vault -------------------------------------------------------
+# The vault at "Understanding RAG/" IS committed -- the notes are the point of
+# this project. Only Obsidian's local UI state is ignored, because it rewrites
+# itself on every pane resize and would bury real note changes in diff noise.
+Understanding RAG/.obsidian/workspace.json
+Understanding RAG/.obsidian/workspace-mobile.json
+Understanding RAG/.obsidian/cache
+Understanding RAG/.trash/
 
 # OS
 Thumbs.db

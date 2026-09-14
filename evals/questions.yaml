@@ -1,0 +1,176 @@
+# Eval question set.
+#
+# Each question carries two kinds of ground truth, because RAG has two failure
+# surfaces and conflating them makes debugging impossible:
+#
+#   expected_docs    -- which documents SHOULD be retrieved. Grades RETRIEVAL.
+#   must_include     -- strings the answer must contain. Grades GENERATION.
+#   must_not_include -- strings whose presence indicates a specific known
+#                       failure (usually a hallucination we have seen before).
+#
+# A question can fail retrieval and still produce a good answer by luck, or
+# retrieve perfectly and still be answered badly. Scoring them separately is
+# what tells you which half to fix.
+#
+# Categories:
+#   lookup    single fact, single document
+#   multihop  requires combining two or more documents
+#   collision a term that collides with common industry usage (Atlas, Sentry)
+#   absent    the answer is NOT in the corpus; correct behaviour is to decline
+
+questions:
+  # --- Single-document lookups -------------------------------------------
+
+  - id: q01
+    category: lookup
+    question: What is the maximum number of Atlas replicas I should scale to, and why?
+    expected_docs: [OPS-002]
+    must_include: ["16"]
+    must_not_include: ["MongoDB"]
+    notes: >
+      The baseline reliably answers "16" for the wrong reason -- it thinks this
+      is MongoDB Atlas, where 16 is the replica set member limit. The real
+      reason is PostGIS's 200-connection cap. A right answer for a wrong reason
+      is still a failure if you ever need to reason from it.
+
+  - id: q02
+    category: lookup
+    question: What is the ULID prefix used for settlement identifiers?
+    expected_docs: [API-003]
+    must_include: ["stl_"]
+    notes: >
+      A pure lexical-retrieval question. The string `stl_` appears once in the
+      corpus and has no semantic neighbourhood -- dense retrieval alone tends
+      to return the whole identifier table or miss it entirely.
+
+  - id: q03
+    category: lookup
+    question: How long is the mandatory soak period before a production deploy?
+    expected_docs: [OPS-004]
+    must_include: ["45"]
+
+  - id: q04
+    category: lookup
+    question: Which environment variable controls Quill's Postgres connection pool size, and what is the safe maximum?
+    expected_docs: [OPS-002]
+    must_include: ["QUILL_PG_POOL_SIZE", "30"]
+
+  - id: q05
+    category: lookup
+    question: Can I deploy to production on a Friday?
+    expected_docs: [OPS-004]
+    must_include: ["No"]
+    notes: >
+      Tests whether the model will state a flat organisational rule rather than
+      hedging into general best-practice advice about deployment risk.
+
+  # --- Multi-document synthesis ------------------------------------------
+
+  - id: q06
+    category: multihop
+    question: Why is the event bus retention period set to 30 days specifically?
+    expected_docs: [ADR-014, DATA-005]
+    must_include: ["90"]
+    notes: >
+      The 30-day figure is in ADR-014; the reason it must sit inside 90 days is
+      in DATA-005. Neither document answers this alone. This is the question
+      that most clearly separates top_k=3 from top_k=5.
+
+  - id: q07
+    category: multihop
+    question: Why does Meridian run two separate regional stacks instead of one multi-region deployment?
+    expected_docs: [ARCH-001, DATA-005]
+    must_include: ["GDPR"]
+
+  - id: q08
+    category: multihop
+    question: The March 2026 Atlas outage is still technically possible today. Why?
+    expected_docs: [PM-2026-03-11]
+    must_include: ["backpressure"]
+    notes: >
+      Requires connecting the root cause to the open action item AI-1 within the
+      same document. Tests whether chunking kept those two facts retrievable
+      together.
+
+  - id: q09
+    category: multihop
+    question: If the Vantage API goes down, what happens to shipments, and what must I not do?
+    expected_docs: [OPS-002]
+    must_include: ["circuit breaker"]
+    must_not_include: ["disable the circuit breaker to let"]
+
+  # --- Term collisions ----------------------------------------------------
+
+  - id: q10
+    category: collision
+    question: What language is Sentry written in and what does it do?
+    expected_docs: [ARCH-001, REF-006]
+    must_include: ["Rust"]
+    must_not_include: ["error tracking", "error monitoring"]
+    notes: >
+      Sentry.io is a well-known error tracking product and the model has strong
+      priors about it. Our Sentry is a Rust customs compliance service. This
+      directly tests rule 3 of the grounded prompt -- follow the context when it
+      contradicts general knowledge.
+
+  - id: q11
+    category: collision
+    question: Is Atlas a database?
+    expected_docs: [ARCH-001, REF-006]
+    must_include: ["geospatial"]
+    must_not_include: ["Atlas is a database", "Atlas is MongoDB"]
+    notes: >
+      This question originally used must_not_include ["MongoDB"] and produced a
+      FALSE FAILURE that is worth preserving as a lesson.
+
+      The grounded answer was correct -- "Atlas is not a database ... explicitly
+      distinguished from MongoDB Atlas (which is not used by Meridian)" -- but it
+      contains the string "MongoDB" because the glossary itself says "Not to be
+      confused with MongoDB Atlas, which we do not use."
+
+      Substring matching has no concept of negation. It cannot separate "Atlas IS
+      MongoDB Atlas" (the hallucination) from "Atlas is NOT MongoDB Atlas" (the
+      correct answer, quoting the corpus). The forbidden strings are now
+      affirmative claims rather than a bare entity name, which is the general fix:
+      forbid the assertion, not the vocabulary.
+
+      This is the single clearest argument for an LLM judge. See notes 08.
+
+  # --- Absent information -------------------------------------------------
+
+  - id: q12
+    category: absent
+    question: What is Meridian's parental leave policy?
+    expected_docs: []
+    must_include: ["does not cover"]
+    notes: >
+      Nothing in the corpus touches HR policy. Correct behaviour is refusal.
+      Without a similarity threshold the retriever returns its five least-bad
+      chunks -- deployment windows, on-call rotation -- and a model asked to
+      answer from them will construct something plausible about leave.
+
+  - id: q13
+    category: absent
+    question: How many engineers work on the Ledger team and what are their names?
+    expected_docs: []
+    must_include: ["does not cover"]
+    notes: >
+      Adversarial: the corpus contains several real names (Priya Raghunathan,
+      Wen Chen, Tomas Lindqvist, Ravi Menon) in other roles. A weak system will
+      retrieve those chunks and assign the names to Ledger.
+
+  - id: q14
+    category: lookup
+    question: What is the SLA of the Vantage Compliance API?
+    expected_docs: [ARCH-001, REF-006]
+    must_include: ["no SLA"]
+    must_not_include: ["does not cover"]
+    notes: >
+      A documented absence, which is NOT the same as absent information. The
+      corpus explicitly states Vantage has no SLA, so the correct answer is
+      "there isn't one" -- not "the documentation does not cover this".
+      Originally miscategorised as `absent` in this file, which was wrong: the
+      question is answerable and retrieval finds it at 0.657. The distinction
+      matters because over-aggressive refusal is its own failure mode, and a
+      system tuned only to avoid hallucination will start declining questions
+      it can actually answer.

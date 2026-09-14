@@ -1,0 +1,23 @@
+# Embeddings. sentence-transformers wraps HuggingFace models with a clean
+# encode() API and handles pooling/normalisation correctly, which is easy to get
+# subtly wrong by hand.
+sentence-transformers==3.3.1
+
+# Lexical retrieval. Included so we can compare dense (embedding) retrieval
+# against plain keyword scoring, and combine them. Dense retrieval is not
+# universally better -- exact identifiers and rare terms favour BM25.
+rank-bm25==0.2.2
+
+# Numeric core. We implement the vector store ourselves on top of numpy rather
+# than pulling in FAISS/Chroma -- see notes/03 for why that is a deliberate
+# teaching choice rather than an oversight.
+numpy==2.2.1
+
+# Local generation via the Ollama HTTP API.
+ollama==0.4.5
+
+# Eval question sets live in YAML so they read as data, not code.
+PyYAML==6.0.2
+
+# Terminal formatting for side-by-side baseline/RAG comparison output.
+rich==13.9.4
