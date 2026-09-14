@@ -55,12 +55,12 @@ This reframing is the thing to carry into [[09 - RAG as Agentic Context Engineer
 
 ## What RAG is not
 
-**It is not fine-tuning.** Fine-tuning adjusts weights to change behaviour,
+**It is not fine-tuning.** Fine-tuning adjusts weights to change behavior,
 style, or format. It is a poor way to install facts: facts you fine-tune in are
 still unattributed, still lossy, and updating them means retraining. Retrieval
 updates by editing a markdown file.
 
-**It is not a memory system.** Vanilla RAG is stateless — each query retrieves
+**It is not a memory system.** Vanilla RAG is stateless; each query retrieves
 independently with no notion of what was retrieved before or what the user has
 already been told.
 
